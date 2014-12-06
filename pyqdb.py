@@ -28,25 +28,39 @@ def process_quote(quote):
     }
 
 
-def filter_by_author(author, quotes):
-    if len(author.split(',')) > 1:
-        authors = author.split(',')
-        return [quote for quote in quotes if compare_authors(authors, quote['authors'])]
-    else:
-        return [quote for quote in quotes if author in quote['authors']]
-
-
-def compare_authors(list1, list2):
+def check_list_occurrences(list1, list2):
     """Returns true if all elements of list1 are contained in list2"""
     return len(list1) == len(set(list1).intersection(list2))
 
 
-def filter_by_rating(rating, quotes):
-    return [quote for quote in quotes if quote['rating'] > int(rating)]
+def filter_by_author(author, quotes):
+    if author != '':
+        if len(author.split(',')) > 1:
+            authors = author.split(',')
+            return [quote for quote in quotes if check_list_occurrences(authors, quote['authors'])]
+        else:
+            return [quote for quote in quotes if author in quote['authors']]
+    else:
+        return quotes
 
 
-def filter_by_timestamp(timestamp, quotes):
-    return [quote for quote in quotes if quote['timestamp'] > int(timestamp)]
+def filter_by_rating(rating, quotes, direction='above'):
+    if direction == 'above':
+        return [quote for quote in quotes if quote['rating'] > int(rating)]
+    elif direction == 'equal':
+        if rating != -100:
+            return [quote for quote in quotes if quote['rating'] == int(rating)]
+        else:
+            return quotes
+    else:
+        return [quote for quote in quotes if quote['rating'] < int(rating)]
+
+
+def filter_by_timestamp(timestamp, quotes, direction='after'):
+    if direction == 'after':
+        return [quote for quote in quotes if quote['timestamp'] > int(timestamp)]
+    else:
+        return [quote for quote in quotes if quote['timestamp'] < int(timestamp)]
 
 
 class Pyqdb:
@@ -63,10 +77,13 @@ class Pyqdb:
         self.cur.execute('SELECT id, quote, rating, date FROM quotes;')
         return [process_quote(row) for row in self.cur]
 
-    def find_by_id(self, id):
-        self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE id = %s;' % id)
+    def find_by_id(self, quote_id):
+        self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE id = %s;' % quote_id)
         return [process_quote(row) for row in self.cur][0]
 
     def find_by_ip(self, ip):
-        self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE submitip = "%s"' % ip)
-        return [process_quote(row) for row in self.cur]
+        if ip != '':
+            self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE submitip = "%s"' % ip)
+            return [process_quote(row) for row in self.cur]
+        else:
+            return self.all_quotes()

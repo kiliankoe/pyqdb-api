@@ -25,12 +25,42 @@ Then you can access the following routes from your app/browser/whatever.
 ]
 ```
 
-`/quotes?author=Notch` returns all quotes by a specific author. This is case-sensitive. Also accepts multiple comma-separated authors: `Notch,Jeb`.
+You can filter this quote listing with a few different parameters, all of these can be used together as well.
 
-`/quotes?ip=127.0.0.1` returns all quotes submitted by a specific IP.
+#### Filter by author
 
-`/quotes?rating_above=10` returns only quotes with a rating above the specified value.
+`/quotes?author=Notch` returns all quotes by a random guy called Notch.
+
+`/quotes?author=Notch,Jeb` multiple, comma-separated authors are also accepted. This would return all quotes where both of them are listed as authors, not all of both their quotes.
+
+Note that the author is case-sensitive.
+
+#### Filter by rating
+
+`/quotes?rating_above=10` returns only quotes with a rating above 10.
+
+`/quotes?rating=10` gives you quotes with an exact rating of 10.
+
+`/quotes?rating_below=-10` returns... You can guess it.
+
+#### Filter by timestamp
 
 `/quotes?after=1417388408` returns only quotes submitted after the given unix timestamp.
 
-`/quotes/1` returns the specific quote with that id.
+`/quotes?before=1390000000` does it the other way around.
+
+#### Filter by submitter IP
+
+Rash-qdb saves the IP of a quote submitter. You can filter by this as well, but the IPs are never included in the output.
+
+`/quotes?ip=127.0.0.1` returns all quotes submitted by localhost.
+
+#### Specific pages
+
+Single quotes are also reachable by their id.
+
+`/quotes/1` returns only the very first quote.
+
+Same goes for authors.
+
+`/quotes/Notch` returns the same output as with the url param above.
