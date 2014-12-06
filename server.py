@@ -19,6 +19,11 @@ def get_quotes():
     else:
         results = p.all_quotes()
 
+    # Authors aren't processed yet. This is done here because IntelliJ would error on
+    # 'Can't access non static method from static context'
+    for i in range(len(results)):
+        results[i]['authors'] = p.process_authors(results[i]['quote'])
+
     if 'author' in request.query:
         results = filter_by_author(request.query['author'], results)
     if 'rating_above' in request.query:
@@ -42,12 +47,6 @@ def get_quotes():
 def get_quote_with_id(quote_id):
     response.content_type = 'text/json'
     return p.find_by_id(quote_id)
-
-
-@route('/quotes/<author>')
-def get_quote_from_author(author):
-    response.content_type = 'text/json'
-    return json.dumps(filter_by_author(author, p.all_quotes()))
 
 
 @route('/status')

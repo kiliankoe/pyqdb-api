@@ -3,6 +3,7 @@ import re
 
 
 def process_authors(quote):
+    # this is rather error-prone and should not be used
     if '-' in quote:
         return [quote.split('-')[1][1:]]
     if '&lt;' in quote:
@@ -22,7 +23,7 @@ def process_quote(quote):
     return {
         'id': quote[0],
         'quote': process_quote_string(quote[1]),
-        'authors': process_authors(quote[1]),
+        'authors': [],
         'rating': quote[2],
         'timestamp': quote[3]
     }
@@ -69,6 +70,13 @@ class Pyqdb:
         self.conn = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db)
         self.cur = self.conn.cursor()
 
+        # read names from file for author processing, everything else just doesn't work
+        file = open('names.txt','r')
+        self.names = file.readlines()
+        file.close()
+        for i in range(len(self.names)):
+            self.names[i] = self.names[i].replace('\n', '')
+
     def close(self):
         self.cur.close()
         self.conn.close()
@@ -87,3 +95,10 @@ class Pyqdb:
             return [process_quote(row) for row in self.cur]
         else:
             return self.all_quotes()
+
+    def process_authors(self, quote):
+        authors = []
+        for name in self.names:
+            if quote.find(name) != -1:
+                authors.append(name)
+        return authors

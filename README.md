@@ -60,7 +60,3 @@ Rash-qdb saves the IP of a quote submitter. You can filter by this as well, but 
 Single quotes are also reachable by their id.
 
 `/quotes/1` returns only the very first quote.
-
-Same goes for authors.
-
-`/quotes/Notch` returns the same output as with the url param above.
