@@ -25,8 +25,12 @@ Then you can access the following routes from your app/browser/whatever.
 ]
 ```
 
-`/quotes?author=Notch` returns all quotes by a specific author. This is case-sensitive.
+`/quotes?author=Notch` returns all quotes by a specific author. This is case-sensitive. Also accepts multiple comma-separated authors: `Notch,Jeb`.
 
-`/quotes?ip=127.0.0.1` returns all quotes submitted by a specific IP
+`/quotes?ip=127.0.0.1` returns all quotes submitted by a specific IP.
 
-`/quotes/1` returns the specific quote with that id
+`/quotes?rating_above=10` returns only quotes with a rating above the specified value.
+
+`/quotes?after=1417388408` returns only quotes submitted after the given unix timestamp.
+
+`/quotes/1` returns the specific quote with that id.
