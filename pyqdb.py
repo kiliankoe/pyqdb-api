@@ -23,9 +23,8 @@ class Pyqdb:
         self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE submitip = "%s"' % ip)
         return [self.process_quote(row) for row in self.cur]
 
-    def find_by_author(self, author):
-        all_quotes = self.all_quotes()
-        return [quote for quote in all_quotes if author in quote['authors']]
+    def filter_by_author(self, author, quotes):
+        return [quote for quote in quotes if author in quote['authors']]
 
     def process_quote(self, quote):
         return {
