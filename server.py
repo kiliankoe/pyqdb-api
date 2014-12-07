@@ -53,14 +53,19 @@ def get_quotes():
 @auth_basic(check)
 def get_quote_with_id(quote_id):
     response.content_type = 'application/json'
-    return p.find_by_id(quote_id)
+    quote = p.find_by_id(quote_id)
+    quote['authors'] = p.process_authors(quote['quote'])
+    return quote
 
 @route('/quotes/lastweek')
 @auth_basic(check)
 def get_last_week():
     ctime = int(time.time()) - 604800
     response.content_type = 'application/json'
-    return json.dumps(filter_by_timestamp(ctime, p.all_quotes()))
+    results = filter_by_timestamp(ctime, p.all_quotes())
+    for i in range(len(results)):
+        results[i]['authors'] = p.process_authors(results[i]['quote'])
+    return json.dumps(results)
 
 
 @route('/status')
