@@ -99,6 +99,6 @@ class Pyqdb:
     def process_authors(self, quote):
         authors = []
         for name in self.names:
-            if quote.find(name) != -1:
+            if re.search('(\W|^)%s(\W|$)' % name.lower(), quote.lower()) is not None:
                 authors.append(name)
         return authors

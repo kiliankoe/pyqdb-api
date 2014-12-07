@@ -13,7 +13,7 @@ except pymysql.err.OperationalError as e:
 
 @route('/quotes')
 def get_quotes():
-    response.content_type = 'text/json'
+    response.content_type = 'application/json'
     if 'ip' in request.query:
         results = p.find_by_ip(request.query['ip'])
     else:
@@ -45,8 +45,14 @@ def get_quotes():
 
 @route('/quotes/<quote_id:int>')
 def get_quote_with_id(quote_id):
-    response.content_type = 'text/json'
+    response.content_type = 'application/json'
     return p.find_by_id(quote_id)
+
+@route('/quotes/lastweek')
+def get_last_week():
+    ctime = int(time.time()) - 604800
+    response.content_type = 'application/json'
+    return json.dumps(filter_by_timestamp(ctime, p.all_quotes()))
 
 
 @route('/status')

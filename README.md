@@ -57,6 +57,6 @@ Rash-qdb saves the IP of a quote submitter. You can filter by this as well, but 
 
 #### Specific pages
 
-Single quotes are also reachable by their id.
-
 `/quotes/1` returns only the very first quote.
+
+`/quotes/lastweek` returns all quotes submitted within the last 7 days
