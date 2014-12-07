@@ -71,7 +71,7 @@ class Pyqdb:
         self.cur = self.conn.cursor()
 
         # read names from file for author processing, everything else just doesn't work
-        file = open('names.txt','r')
+        file = open('names.txt', 'r')
         self.names = file.readlines()
         file.close()
         for i in range(len(self.names)):
@@ -86,12 +86,14 @@ class Pyqdb:
         return [process_quote(row) for row in self.cur]
 
     def find_by_id(self, quote_id):
-        self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE id = %s;' % quote_id)
+        sql = 'SELECT id, quote, rating, date FROM quotes WHERE id = %s;'
+        self.cur.execute(sql, (quote_id,))
         return [process_quote(row) for row in self.cur][0]
 
     def find_by_ip(self, ip):
         if ip != '':
-            self.cur.execute('SELECT id, quote, rating, date FROM quotes WHERE submitip = "%s"' % ip)
+            sql = 'SELECT id, quote, rating, date FROM quotes WHERE submitip = "%s"'
+            self.cur.execute(sql, (ip,))
             return [process_quote(row) for row in self.cur]
         else:
             return self.all_quotes()

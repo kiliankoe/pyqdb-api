@@ -9,7 +9,7 @@ $ pip install requirements.txt
 $ python server.py
 ```
 
-Be sure to edit server.py with the credentials for your MySQL db first.
+Be sure to edit server.py with your MySQL db and basic auth credentials first.
 
 Then you can access the following routes from your app/browser/whatever.
 
