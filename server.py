@@ -1,8 +1,9 @@
 from pyqdb import *
-from bottle import route, run, request, response, debug
+from bottle import route, run, request, response, auth_basic, debug
 import time
 import json
 import os
+import hashlib
 
 try:
     p = Pyqdb(host='127.0.0.1',port=3306,user='',
@@ -11,7 +12,12 @@ except pymysql.err.OperationalError as e:
     print('Error: ' + str(e))
 
 
+def check(user, pw):
+    return user == '' and hashlib.md5(pw.encode('utf-8')).hexdigest() == ''
+
+
 @route('/quotes')
+@auth_basic(check)
 def get_quotes():
     response.content_type = 'application/json'
     if 'ip' in request.query:
@@ -44,11 +50,13 @@ def get_quotes():
 
 
 @route('/quotes/<quote_id:int>')
+@auth_basic(check)
 def get_quote_with_id(quote_id):
     response.content_type = 'application/json'
     return p.find_by_id(quote_id)
 
 @route('/quotes/lastweek')
+@auth_basic(check)
 def get_last_week():
     ctime = int(time.time()) - 604800
     response.content_type = 'application/json'
