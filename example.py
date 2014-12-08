@@ -66,5 +66,4 @@ for author, count in author_count(get_all_quotes()).items():
 
 # print a list of authors together with their respective average rating
 for author in author_list(get_all_quotes()):
-    # print(author)
     print(author + ': %.2f' % mean_rating(get_author_quotes(author)))
