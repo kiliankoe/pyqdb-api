@@ -19,6 +19,8 @@ def check(user, pw):
 @route('/quotes')
 @auth_basic(check)
 def get_quotes():
+    if not p.test_db():
+        return {'Error': 'Database Connection Error'}
     response.content_type = 'application/json'
     if 'ip' in request.query:
         results = p.find_by_ip(request.query['ip'])
@@ -52,14 +54,19 @@ def get_quotes():
 @route('/quotes/<quote_id:int>')
 @auth_basic(check)
 def get_quote_with_id(quote_id):
+    if not p.test_db():
+        return {'Error': 'Database Connection Error'}
     response.content_type = 'application/json'
     quote = p.find_by_id(quote_id)
     quote['authors'] = p.process_authors(quote['quote'])
     return quote
 
+
 @route('/quotes/lastweek')
 @auth_basic(check)
 def get_last_week():
+    if not p.test_db():
+        return {'Error': 'Database Connection Error'}
     ctime = int(time.time()) - 604800
     response.content_type = 'application/json'
     results = filter_by_timestamp(ctime, p.all_quotes())

@@ -3,7 +3,7 @@ import re
 
 
 def process_authors(quote):
-    # this is rather error-prone and should not be used
+    """[Deprecated] Return a list of authors contained in a given quote."""
     if '-' in quote:
         return [quote.split('-')[1][1:]]
     if '&lt;' in quote:
@@ -13,6 +13,7 @@ def process_authors(quote):
 
 
 def process_quote_string(quote):
+    """Replace the typical HTML entities rash-qdb stores quotes with."""
     quote = quote.replace('&quot;', '"')
     quote = quote.replace('&lt;', '<')
     quote = quote.replace('&gt;', '>')
@@ -20,6 +21,7 @@ def process_quote_string(quote):
 
 
 def process_quote(quote):
+    """Takes a row returned from the database and returns a quote dictionary."""
     return {
         'id': quote[0],
         'quote': process_quote_string(quote[1]),
@@ -30,11 +32,12 @@ def process_quote(quote):
 
 
 def check_list_occurrences(list1, list2):
-    """Returns true if all elements of list1 are contained in list2"""
+    """Return true if all elements of list1 are contained in list2."""
     return len(list1) == len(set(list1).intersection(list2))
 
 
 def filter_by_author(author, quotes):
+    """Filter a list of quotes by a given author or multiple comma-separated authors."""
     if author != '':
         if len(author.split(',')) > 1:
             authors = author.split(',')
@@ -46,6 +49,7 @@ def filter_by_author(author, quotes):
 
 
 def filter_by_rating(rating, quotes, direction='above'):
+    """Filter a list of quotes by a given rating, return either anything above, equal or below."""
     if direction == 'above':
         return [quote for quote in quotes if quote['rating'] > int(rating)]
     elif direction == 'equal':
@@ -58,6 +62,7 @@ def filter_by_rating(rating, quotes, direction='above'):
 
 
 def filter_by_timestamp(timestamp, quotes, direction='after'):
+    """Filter a list of quotes by a given timestamp, return either anything before or after."""
     if direction == 'after':
         return [quote for quote in quotes if quote['timestamp'] > int(timestamp)]
     else:
@@ -81,16 +86,26 @@ class Pyqdb:
         self.cur.close()
         self.conn.close()
 
+    def test_db(self):
+        try:
+            self.cur.execute('SELECT * FROM quotes;')
+            return True
+        except pymysql.Error:
+            return False
+
     def all_quotes(self):
+        """Get all quotes from the database."""
         self.cur.execute('SELECT id, quote, rating, date FROM quotes;')
         return [process_quote(row) for row in self.cur]
 
     def find_by_id(self, quote_id):
+        """Get a single quote by its ID."""
         sql = 'SELECT id, quote, rating, date FROM quotes WHERE id = %s;'
         self.cur.execute(sql, (quote_id,))
         return [process_quote(row) for row in self.cur][0]
 
     def find_by_ip(self, ip):
+        """Get quotes submitted by a specific IP."""
         if ip != '':
             sql = 'SELECT id, quote, rating, date FROM quotes WHERE submitip = "%s"'
             self.cur.execute(sql, (ip,))
@@ -99,6 +114,7 @@ class Pyqdb:
             return self.all_quotes()
 
     def process_authors(self, quote):
+        """Matches a list of names stored in Pyqdb() with a given quote to fill the quote's list of authors."""
         authors = []
         for name in self.names:
             if re.search('(\W|^)%s(\W|$)' % name.lower(), quote.lower()) is not None:
