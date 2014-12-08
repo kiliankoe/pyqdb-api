@@ -16,6 +16,12 @@ def check(user, pw):
     return user == '' and hashlib.md5(pw.encode('utf-8')).hexdigest() == ''
 
 
+@route('/')
+def get_root():
+    response.content_type = 'text/plain'
+    return 'Looking for the quotes? They\'re under /quotes'
+
+
 @route('/quotes')
 @auth_basic(check)
 def get_quotes():
