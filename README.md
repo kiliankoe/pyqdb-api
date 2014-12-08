@@ -9,7 +9,7 @@ $ pip install requirements.txt
 $ python server.py
 ```
 
-Be sure to edit server.py with your MySQL db and basic auth credentials first.
+Be sure to edit [server.py](https://github.com/kiliankoe/pyqdb-api/blob/master/server.py) with your MySQL db and basic auth credentials first.
 
 Then you can access the following routes from your app/browser/whatever.
 
@@ -60,3 +60,8 @@ Rash-qdb saves the IP of a quote submitter. You can filter by this as well, but 
 `/quotes/1` returns only the very first quote.
 
 `/quotes/lastweek` returns all quotes submitted within the last 7 days
+
+
+### Examples
+
+Check [example.py](https://github.com/kiliankoe/pyqdb-api/blob/master/example.py) for some sample interaction with the API
