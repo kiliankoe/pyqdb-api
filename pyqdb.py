@@ -95,7 +95,10 @@ class Pyqdb:
         """Get a single quote by its ID."""
         sql = 'SELECT id, quote, rating, date FROM quotes WHERE id = %s;'
         self.cur.execute(sql, (quote_id,))
-        return [process_quote(row) for row in self.cur][0]
+        if self.cur.rowcount != 0:
+            return [process_quote(row) for row in self.cur][0]
+        else:
+            return []
 
     def find_by_ip(self, ip):
         """Get quotes submitted by a specific IP."""

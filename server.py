@@ -84,8 +84,12 @@ def get_quote_with_id(quote_id):
         return {'Error': 'Database Connection Error'}
 
     response.content_type = 'application/json'
+
     quote = p.find_by_id(quote_id)
-    quote['authors'] = p.process_authors(quote['quote'])
+    if quote:
+        quote['authors'] = p.process_authors(quote['quote'])
+    else:
+        return {'Error': 'No such quote'}
 
     p.close()
 
