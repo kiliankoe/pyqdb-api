@@ -69,18 +69,30 @@ def filter_by_timestamp(timestamp, quotes, direction='after'):
         return [quote for quote in quotes if quote['timestamp'] < int(timestamp)]
 
 
-class Pyqdb:
+class NameHandler():
 
-    def __init__(self, host, port, user, passwd, db):
-        self.conn = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db)
-        self.cur = self.conn.cursor()
-
-        # read names from file for author processing, everything else just doesn't work
+    def __init__(self):
+        # read names from file for author processing, regex magic just isn't enough for these kind of quotes
         file = open('names.txt', 'r')
         self.names = file.readlines()
         file.close()
         for i in range(len(self.names)):
             self.names[i] = self.names[i].replace('\n', '')
+
+    def process_authors(self, quote):
+        """Matches a list of names stored in Pyqdb() with a given quote to fill the quote's list of authors."""
+        authors = []
+        for name in self.names:
+            if re.search('(\W|^)%s(\W|$)' % name.lower(), quote.lower()) is not None:
+                authors.append(name)
+        return authors
+
+
+class Pyqdb:
+
+    def __init__(self, host, port, user, passwd, db):
+        self.conn = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db)
+        self.cur = self.conn.cursor()
 
     def close(self):
         self.cur.close()
@@ -108,11 +120,3 @@ class Pyqdb:
             return [process_quote(row) for row in self.cur]
         else:
             return self.all_quotes()
-
-    def process_authors(self, quote):
-        """Matches a list of names stored in Pyqdb() with a given quote to fill the quote's list of authors."""
-        authors = []
-        for name in self.names:
-            if re.search('(\W|^)%s(\W|$)' % name.lower(), quote.lower()) is not None:
-                authors.append(name)
-        return authors

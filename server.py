@@ -9,6 +9,8 @@ f = open('secrets.json', 'r')
 secrets = json.loads(f.read())
 f.close()
 
+name_handler = NameHandler()
+
 db_host = secrets['db']['host']
 db_port = int(secrets['db']['port'])
 db_user = secrets['db']['user']
@@ -53,7 +55,7 @@ def get_quotes():
     # Authors aren't processed yet. This is done here because IntelliJ would error on
     # 'Can't access non static method from static context'
     for i in range(len(results)):
-        results[i]['authors'] = p.process_authors(results[i]['quote'])
+        results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
     if 'author' in request.query:
         results = filter_by_author(request.query['author'], results)
@@ -87,7 +89,7 @@ def get_quote_with_id(quote_id):
 
     quote = p.find_by_id(quote_id)
     if quote:
-        quote['authors'] = p.process_authors(quote['quote'])
+        quote['authors'] = name_handler.process_authors(quote['quote'])
     else:
         return {'Error': 'No such quote'}
 
@@ -108,7 +110,7 @@ def get_last_week():
     response.content_type = 'application/json'
     results = filter_by_timestamp(ctime, p.all_quotes())
     for i in range(len(results)):
-        results[i]['authors'] = p.process_authors(results[i]['quote'])
+        results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
     p.close()
 
