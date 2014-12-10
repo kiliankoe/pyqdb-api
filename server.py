@@ -41,7 +41,7 @@ def get_root():
 def get_quotes():
     p = connect_to_db()
 
-    if not p.test_db():
+    if p is None:
         return {'Error': 'Database Connection Error'}
 
     response.content_type = 'application/json'
@@ -80,7 +80,7 @@ def get_quotes():
 def get_quote_with_id(quote_id):
     p = connect_to_db()
 
-    if not p.test_db():
+    if p is None:
         return {'Error': 'Database Connection Error'}
 
     response.content_type = 'application/json'
@@ -97,7 +97,7 @@ def get_quote_with_id(quote_id):
 def get_last_week():
     p = connect_to_db()
 
-    if not p.test_db():
+    if p is None:
         return {'Error': 'Database Connection Error'}
 
     ctime = int(time.time()) - 604800

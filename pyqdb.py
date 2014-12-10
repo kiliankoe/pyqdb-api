@@ -86,13 +86,6 @@ class Pyqdb:
         self.cur.close()
         self.conn.close()
 
-    def test_db(self):
-        try:
-            self.cur.execute('SELECT * FROM quotes;')
-            return True
-        except pymysql.Error:
-            return False
-
     def all_quotes(self):
         """Get all quotes from the database."""
         self.cur.execute('SELECT id, quote, rating, date FROM quotes;')
