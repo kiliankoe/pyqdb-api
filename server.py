@@ -32,6 +32,10 @@ def check(auth_user, auth_pw):
         and hashlib.md5(auth_pw.encode('utf-8')).hexdigest() == secrets['http']['pass']
 
 
+def check_post(auth_user, auth_pw):
+    return auth_user == '' and auth_pw == ''
+
+
 @route('/')
 def get_root():
     response.content_type = 'text/plain'
@@ -77,6 +81,36 @@ def get_quotes():
     # see http://flask.pocoo.org/docs/0.10/security/#json-security
     # but it's not like this tool has sensitive information... :D
     return json.dumps(results)
+
+
+@route('/quotes', 'POST')
+@auth_basic(check_post)
+def post_new_quote():
+    p = connect_to_db()
+
+    response.content_type = 'application/json'
+
+    if p is None:
+        response.status = 500
+        return {'Error': 'Database Connection Error'}
+
+    quote = request.forms.get('quote')
+    date = request.forms.get('date')
+    submitip = request.forms.get('submitip')
+
+    if quote is None or date is None or submitip is None:
+        response.status = 400
+        return {'Error': 'Invalid data supplied. Needs `quote`, `date` and `submitip`'}
+
+    result = p.add_quote(quote, date, submitip)
+
+    p.close()
+
+    if result:
+        return {'Status': 'Läuft'}
+    else:
+        response.status = 500
+        return {'Error': 'Couldn\'t add quote to database'}
 
 
 @route('/quotes/<quote_id:int>')
