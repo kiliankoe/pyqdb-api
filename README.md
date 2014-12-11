@@ -67,7 +67,9 @@ Rash-qdb saves the IP of a quote submitter. You can filter by this as well, but 
 
 ### Add new quotes
 
-Sending a POST request to `/quotes` adds a new quote to the database. Include the parameters `quote` with a quote in the typical format. HTML entities are escaped on the server side, no need for that on the client.
+Sending a POST request to `/quotes` adds a new quote to the database.
+
+Send a form-urlencoded request with the parameter `quote`. HTML entities are escaped on the server side, no need for that on the client.
 
 
 ### Examples
