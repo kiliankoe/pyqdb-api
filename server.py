@@ -38,15 +38,17 @@ def get_root():
     return 'Looking for the quotes? They\'re under /quotes'
 
 
-@route('/quotes')
+@route('/quotes', 'GET')
 @auth_basic(check)
 def get_quotes():
     p = connect_to_db()
 
+    response.content_type = 'application/json'
+
     if p is None:
+        response.status = 500
         return {'Error': 'Database Connection Error'}
 
-    response.content_type = 'application/json'
     if 'ip' in request.query:
         results = p.find_by_ip(request.query['ip'])
     else:
@@ -82,15 +84,17 @@ def get_quotes():
 def get_quote_with_id(quote_id):
     p = connect_to_db()
 
-    if p is None:
-        return {'Error': 'Database Connection Error'}
-
     response.content_type = 'application/json'
+
+    if p is None:
+        response.status = 500
+        return {'Error': 'Database Connection Error'}
 
     quote = p.find_by_id(quote_id)
     if quote:
         quote['authors'] = name_handler.process_authors(quote['quote'])
     else:
+        response.status = 404
         return {'Error': 'No such quote'}
 
     p.close()
@@ -103,12 +107,14 @@ def get_quote_with_id(quote_id):
 def get_last_week():
     p = connect_to_db()
 
+    response.content_type = 'application/json'
+
     if p is None:
+        response.status = 500
         return {'Error': 'Database Connection Error'}
 
-    ctime = int(time.time()) - 604800
-    response.content_type = 'application/json'
-    results = filter_by_timestamp(ctime, p.all_quotes())
+    timestamp_last_week = int(time.time()) - 604800
+    results = filter_by_timestamp(timestamp_last_week, p.all_quotes())
     for i in range(len(results)):
         results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
@@ -120,6 +126,13 @@ def get_last_week():
 @route('/status')
 def api_status():
     return {'status': 'online', 'servertime': time.time(), 'load': os.getloadavg()}
+
+
+@route('/coffee')
+def make_coffee():
+    response.status = 418
+    response.content_type = 'application/json'
+    return {'Error': 'I\'m a teapot.'}
 
 
 if os.getenv('env') == 'development':
