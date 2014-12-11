@@ -6,9 +6,7 @@ def get_all_quotes():
     """Makes an API request for all quotes"""
     r = requests.get(
         url='',
-        headers={
-            'Authorization': 'Basic '
-        }
+        auth=('', '')
     )
     return json.loads(r.content.decode('utf-8'))
 
@@ -17,11 +15,9 @@ def get_author_quotes(search_author):
     """Makes an API request for a list of all quotes from a specific author"""
     r = requests.get(
         url='',
+        auth=('', ''),
         params={
             'author': search_author
-        },
-        headers={
-            'Authorization': 'Basic '
         }
     )
     return json.loads(r.content.decode('utf-8'))
