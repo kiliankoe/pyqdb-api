@@ -9,7 +9,7 @@ $ pip install requirements.txt
 $ python server.py
 ```
 
-Be sure to edit [server.py](https://github.com/kiliankoe/pyqdb-api/blob/master/server.py) with your MySQL db and basic auth credentials first.
+Your MySQL and HTTP basic auth credentials are stored in a file called secrets.json in the project directory.
 
 Then you can access the following routes from your app/browser/whatever.
 
