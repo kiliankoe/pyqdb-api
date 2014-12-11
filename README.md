@@ -13,6 +13,9 @@ Be sure to edit [server.py](https://github.com/kiliankoe/pyqdb-api/blob/master/s
 
 Then you can access the following routes from your app/browser/whatever.
 
+
+### Get quotes
+
 `/quotes` returns all quotes in the db like this:
 ```js
 [{
@@ -60,6 +63,11 @@ Rash-qdb saves the IP of a quote submitter. You can filter by this as well, but 
 `/quotes/1` returns only the very first quote.
 
 `/quotes/lastweek` returns all quotes submitted within the last 7 days
+
+
+### Add new quotes
+
+Sending a POST request to `/quotes` adds a new quote to the database. Include the parameters `quote` with a quote in the typical format. HTML entities are escaped on the server side, no need for that on the client.
 
 
 ### Examples

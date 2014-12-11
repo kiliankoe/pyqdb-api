@@ -95,14 +95,13 @@ def post_new_quote():
         return {'Error': 'Database Connection Error'}
 
     quote = request.forms.get('quote')
-    date = request.forms.get('date')
-    submitip = request.forms.get('submitip')
+    submitip = request.remote_addr
 
-    if quote is None or date is None or submitip is None:
+    if quote is None:
         response.status = 400
-        return {'Error': 'Invalid data supplied. Needs `quote`, `date` and `submitip`'}
+        return {'Error': 'Invalid data supplied. Needs `quote`.'}
 
-    result = p.add_quote(quote, date, submitip)
+    result = p.add_quote(quote, submitip)
 
     p.close()
 

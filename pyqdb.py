@@ -1,6 +1,7 @@
 import pymysql
 import re
 import html
+import time
 
 
 def process_authors(quote):
@@ -122,11 +123,11 @@ class Pyqdb:
         else:
             return self.all_quotes()
 
-    def add_quote(self, quote, date, submitip):
+    def add_quote(self, quote, submitip):
         """Add a new quote to the database. Takes a quote string, a date as unix time and an IP address."""
         try:
             sql = 'INSERT INTO quotes (quote, rating, flag, date, submitip) VALUES (%s, 0, 0, %s, %s);'
-            self.cur.execute(sql, (html.escape(quote), date, submitip,))
+            self.cur.execute(sql, (html.escape(quote), int(time.time()), submitip,))
             self.conn.commit()
             return True
         except pymysql.DatabaseError as e:
