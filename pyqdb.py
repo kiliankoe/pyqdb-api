@@ -14,19 +14,11 @@ def process_authors(quote):
         return []
 
 
-def process_quote_string(quote):
-    """Replace the typical HTML entities rash-qdb stores quotes with."""
-    quote = quote.replace('&quot;', '"')
-    quote = quote.replace('&lt;', '<')
-    quote = quote.replace('&gt;', '>')
-    return quote
-
-
 def process_quote(quote):
     """Takes a row returned from the database and returns a quote dictionary."""
     return {
         'id': quote[0],
-        'quote': process_quote_string(quote[1]),
+        'quote': html.unescape(quote[1]),
         'authors': [],
         'rating': quote[2],
         'timestamp': quote[3]
