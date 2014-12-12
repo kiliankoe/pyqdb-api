@@ -64,17 +64,17 @@ def get_quotes():
         results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
     if 'author' in request.query:
-        results = filter_by_author(request.query['author'], results)
+        results = filter_by_author(request.query.author, results)
     if 'rating_above' in request.query:
-        results = filter_by_rating(request.query['rating_above'], results)
+        results = filter_by_rating(request.query.rating_above, results)
     if 'rating' in request.query:
-        results = filter_by_rating(request.query['rating'], results, 'equal')
+        results = filter_by_rating(request.query.rating, results, 'equal')
     if 'rating_below' in request.query:
-        results = filter_by_rating(request.query['rating_below'], results, 'below')
+        results = filter_by_rating(request.query.rating_below, results, 'below')
     if 'after' in request.query:
-        results = filter_by_timestamp(request.query['after'], results)
+        results = filter_by_timestamp(request.query.after, results)
     if 'before' in request.query:
-        results = filter_by_timestamp(request.query['before'], results, 'before')
+        results = filter_by_timestamp(request.query.before, results, 'before')
 
     p.close()
     # apparently returning a straight list of dicts is unsupported due to security concerns
@@ -94,12 +94,12 @@ def post_new_quote():
         response.status = 500
         return {'Error': 'Database Connection Error'}
 
-    quote = request.forms.get('quote')
-    submitip = request.remote_addr
-
-    if quote is None:
+    if 'quote' not in request.forms:
         response.status = 400
         return {'Error': 'Invalid data supplied. Needs `quote`.'}
+
+    quote = request.forms.quote
+    submitip = request.remote_addr
 
     result = p.add_quote(quote, submitip)
 
