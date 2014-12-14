@@ -3,19 +3,18 @@ from bottle import route, run, request, response, auth_basic, debug
 import time
 import json
 import os
-import hashlib
+import configparser
 
-f = open('secrets.json', 'r')
-secrets = json.loads(f.read())
-f.close()
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 name_handler = NameHandler()
 
-db_host = secrets['db']['host']
-db_port = int(secrets['db']['port'])
-db_user = secrets['db']['user']
-db_passwd = secrets['db']['pass']
-db_default_db = secrets['db']['db']
+db_host = config['Database']['host']
+db_port = int(config['Database']['port'])
+db_user = config['Database']['user']
+db_passwd = config['Database']['password']
+db_default_db = config['Database']['default_db']
 
 
 def connect_to_db():
@@ -30,13 +29,12 @@ def connect_to_db():
 
 def check(auth_user, auth_pw):
     """Check the default HTTP basic auth credentials."""
-    return auth_user == secrets['http']['user'] \
-        and hashlib.md5(auth_pw.encode('utf-8')).hexdigest() == secrets['http']['pass']
+    return auth_user == config['HTTP Auth']['user'] and auth_pw == config['HTTP Auth']['password']
 
 
 def check_post(auth_user, auth_pw):
     """Check the HTTP basic auth credentials for a POST request adding a quote."""
-    return auth_user == '' and auth_pw == ''
+    return auth_user == config['HTTP Auth POST']['user'] and auth_pw == config['HTTP Auth POST']['password']
 
 
 @route('/')
@@ -125,23 +123,29 @@ def post_quote_from_sms():
 
     response.content_type = 'text/plain'
 
-    approved_numbers = {'+49XXXXXXXXXXX': 'name',
-                        '+49YYYYYYYYYYY': 'name'}
-
-    if p is None:
-        return 'Database error, couldn\'t add quote to database.'
+    if 'Body' not in request.forms or 'From' not in request.forms:
+        # this shouldn't happen with Twilio, but catch it just in case
+        response.status = 400
+        return None
 
     quote = request.forms.Body
     sender = request.forms.From
 
-    if sender not in approved_numbers:
+    if sender not in name_handler.approved_numbers:
+        # don't allow quotes from non-approved numbers
+        response.status = 403
         return None
+
+    if p is None:
+        response.status = 500
+        return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
 
     result = p.add_quote(quote, '127.0.0.2')
     if result:
         return None
     else:
-        return 'Database error, couldn\'t add quote to database.'
+        response.status = 500
+        return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
 
 
 @route('/quotes/<quote_id:int>')
@@ -206,6 +210,6 @@ def make_coffee():
 
 if os.getenv('env') == 'development':
     debug(True)
-    run(reloader=True)
+    run(reloader=True, host=config['Server']['host'], port=config['Server']['port'])
 else:
-    run()
+    run(host=config['Server']['host'], port=config['Server']['port'])

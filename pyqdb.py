@@ -2,6 +2,7 @@ import pymysql
 import re
 import html
 import time
+import json
 
 
 def process_authors(quote):
@@ -72,6 +73,11 @@ class NameHandler():
         file.close()
         for i in range(len(self.names)):
             self.names[i] = self.names[i].replace('\n', '')
+
+        # read approved_numbers for submitting quotes via text message
+        file = open('approved_numbers.json', 'r')
+        self.approved_numbers = json.loads(file.read())
+        file.close()
 
     def process_authors(self, quote):
         """Matches a list of names stored in Pyqdb() with a given quote to fill the quote's list of authors."""
