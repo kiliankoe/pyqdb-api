@@ -1,9 +1,11 @@
+from flask import Flask, request
 from pyqdb import *
-from bottle import route, run, request, response, auth_basic, debug
 import time
 import json
 import os
 import configparser
+
+app = Flask(__name__)
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -37,14 +39,14 @@ def check_post(auth_user, auth_pw):
     return auth_user == config['HTTP Auth POST']['user'] and auth_pw == config['HTTP Auth POST']['password']
 
 
-@route('/')
+@app.route('/')
 def get_root():
     """Catch requests to the root of the API, so they don't show with errors."""
     response.content_type = 'text/plain'
     return 'Looking for the quotes? They\'re under /quotes'
 
 
-@route('/quotes', 'GET')
+@app.route('/quotes', 'GET')
 @auth_basic(check)
 def get_quotes():
     """Get all quotes from the database and filter them with a few array parameters if needed."""
@@ -86,7 +88,7 @@ def get_quotes():
     return json.dumps(results)
 
 
-@route('/quotes', 'POST')
+@app.route('/quotes', methods=['POST'])
 @auth_basic(check_post)
 def post_new_quote():
     """Accept POST requests for adding new quotes"""
@@ -98,11 +100,11 @@ def post_new_quote():
         response.status = 500
         return {'Error': 'Database Connection Error'}
 
-    if 'quote' not in request.forms:
+    if 'quote' not in request.form:
         response.status = 400
         return {'Error': 'Invalid data supplied. Needs `quote`.'}
 
-    quote = request.forms.quote
+    quote = request.form.quote
     submitip = request.remote_addr
 
     result = p.add_quote(quote, submitip)
@@ -116,7 +118,7 @@ def post_new_quote():
         return {'Error': 'Couldn\'t add quote to database'}
 
 
-@route('/quotes/twilio', 'POST')
+@app.route('/quotes/twilio', 'POST')
 @auth_basic(check_post)
 def post_quote_from_sms():
     """A webhook for Twilio accepting new quotes via text message by approved senders."""
@@ -124,13 +126,13 @@ def post_quote_from_sms():
 
     response.content_type = 'text/plain'
 
-    if 'Body' not in request.forms or 'From' not in request.forms:
+    if 'Body' not in request.form or 'From' not in request.form:
         # this shouldn't happen with Twilio, but catch it just in case
         response.status = 400
         return None
 
-    quote = request.forms.Body
-    sender = request.forms.From
+    quote = request.form.Body
+    sender = request.form.From
 
     if sender not in name_handler.approved_numbers:
         # don't allow quotes from non-approved numbers
@@ -149,7 +151,7 @@ def post_quote_from_sms():
         return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
 
 
-@route('/quotes/<quote_id:int>')
+@app.route('/quotes/<int:quote_id>')
 @auth_basic(check)
 def get_quote_with_id(quote_id):
     """Get a specific quote directly by its ID."""
@@ -173,7 +175,7 @@ def get_quote_with_id(quote_id):
     return quote
 
 
-@route('/quotes/lastweek')
+@app.route('/quotes/lastweek')
 @auth_basic(check)
 def get_last_week():
     """Return all quotes submitted within the last 7 days."""
@@ -195,13 +197,13 @@ def get_last_week():
     return json.dumps(results)
 
 
-@route('/status')
+@app.route('/status')
 def api_status():
     """Return the current server time and load averages."""
     return {'status': 'online', 'servertime': time.time(), 'load': os.getloadavg()}
 
 
-@route('/coffee')
+@app.route('/coffee')
 def make_coffee():
     """Answer to /coffee with the most important HTTP status code of all."""
     response.status = 418
@@ -210,7 +212,6 @@ def make_coffee():
 
 
 if os.getenv('env') == 'development':
-    debug(True)
-    run(reloader=True, host=config['Server']['host'], port=config['Server']['port'])
+    app.run(debug=True, host=config['Server']['host'], port=config['Server']['port'])
 else:
-    run(host=config['Server']['host'], port=config['Server']['port'])
+    app.run(host=config['Server']['host'], port=config['Server']['port'])
