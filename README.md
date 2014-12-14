@@ -9,7 +9,7 @@ $ pip install requirements.txt
 $ python server.py
 ```
 
-Your MySQL and HTTP basic auth credentials are stored in a file called secrets.json in the project directory.
+Your MySQL and HTTP basic auth credentials are stored in a file called config.ini. Duplicate and rename the example and then fill in the details.
 
 Then you can access the following routes from your app/browser/whatever.
 
