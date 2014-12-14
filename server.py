@@ -19,6 +19,7 @@ db_default_db = secrets['db']['db']
 
 
 def connect_to_db():
+    """Instantiate a new database object by connecting to the database with the supplied credentials."""
     try:
         p = Pyqdb(host=db_host, port=db_port, user=db_user, passwd=db_passwd, db=db_default_db)
     except pymysql.OperationalError as e:
@@ -28,16 +29,19 @@ def connect_to_db():
 
 
 def check(auth_user, auth_pw):
+    """Check the default HTTP basic auth credentials."""
     return auth_user == secrets['http']['user'] \
         and hashlib.md5(auth_pw.encode('utf-8')).hexdigest() == secrets['http']['pass']
 
 
 def check_post(auth_user, auth_pw):
+    """Check the HTTP basic auth credentials for a POST request adding a quote."""
     return auth_user == '' and auth_pw == ''
 
 
 @route('/')
 def get_root():
+    """Catch requests to the root of the API, so they don't show with errors."""
     response.content_type = 'text/plain'
     return 'Looking for the quotes? They\'re under /quotes'
 
@@ -45,6 +49,7 @@ def get_root():
 @route('/quotes', 'GET')
 @auth_basic(check)
 def get_quotes():
+    """Get all quotes from the database and filter them with a few array parameters if needed."""
     p = connect_to_db()
 
     response.content_type = 'application/json'
@@ -86,6 +91,7 @@ def get_quotes():
 @route('/quotes', 'POST')
 @auth_basic(check_post)
 def post_new_quote():
+    """Accept POST requests for adding new quotes"""
     p = connect_to_db()
 
     response.content_type = 'application/json'
@@ -114,6 +120,7 @@ def post_new_quote():
 
 @route('/quotes/twilio', 'POST')
 def post_quote_from_sms():
+    """A webhook for Twilio accepting new quotes via text message by approved senders."""
     p = connect_to_db()
 
     response.content_type = 'text/plain'
@@ -140,6 +147,7 @@ def post_quote_from_sms():
 @route('/quotes/<quote_id:int>')
 @auth_basic(check)
 def get_quote_with_id(quote_id):
+    """Get a specific quote directly by its ID."""
     p = connect_to_db()
 
     response.content_type = 'application/json'
@@ -163,6 +171,7 @@ def get_quote_with_id(quote_id):
 @route('/quotes/lastweek')
 @auth_basic(check)
 def get_last_week():
+    """Return all quotes submitted within the last 7 days."""
     p = connect_to_db()
 
     response.content_type = 'application/json'
@@ -183,11 +192,13 @@ def get_last_week():
 
 @route('/status')
 def api_status():
+    """Return the current server time and load averages."""
     return {'status': 'online', 'servertime': time.time(), 'load': os.getloadavg()}
 
 
 @route('/coffee')
 def make_coffee():
+    """Answer to /coffee with the most important HTTP status code of all."""
     response.status = 418
     response.content_type = 'application/json'
     return {'Error': 'I\'m a teapot.'}
