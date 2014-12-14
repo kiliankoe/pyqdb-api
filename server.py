@@ -117,6 +117,7 @@ def post_new_quote():
 
 
 @route('/quotes/twilio', 'POST')
+@auth_basic(check_post)
 def post_quote_from_sms():
     """A webhook for Twilio accepting new quotes via text message by approved senders."""
     p = connect_to_db()
@@ -140,7 +141,7 @@ def post_quote_from_sms():
         response.status = 500
         return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
 
-    result = p.add_quote(quote, '127.0.0.2')
+    result = p.add_quote(quote, sender)
     if result:
         return None
     else:
