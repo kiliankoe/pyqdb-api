@@ -112,6 +112,22 @@ def post_new_quote():
         return {'Error': 'Couldn\'t add quote to database'}
 
 
+@route('/quotes/twilio', 'POST')
+def post_quote_from_sms():
+    p = connect_to_db()
+
+    approved_numbers = {'+49XXXXXXXXXXX': 'name',
+                        '+49YYYYYYYYYYY': 'name'}
+
+    quote = request.forms.Body
+    sender = request.forms.From
+
+    if sender in approved_numbers:
+        p.add_quote(quote, '127.0.0.2')
+
+    return None
+
+
 @route('/quotes/<quote_id:int>')
 @auth_basic(check)
 def get_quote_with_id(quote_id):
