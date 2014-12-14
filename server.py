@@ -116,16 +116,25 @@ def post_new_quote():
 def post_quote_from_sms():
     p = connect_to_db()
 
+    response.content_type = 'text/plain'
+
     approved_numbers = {'+49XXXXXXXXXXX': 'name',
                         '+49YYYYYYYYYYY': 'name'}
+
+    if p is None:
+        return 'Database error, couldn\'t add quote to database.'
 
     quote = request.forms.Body
     sender = request.forms.From
 
-    if sender in approved_numbers:
-        p.add_quote(quote, '127.0.0.2')
+    if sender not in approved_numbers:
+        return None
 
-    return None
+    result = p.add_quote(quote, '127.0.0.2')
+    if result:
+        return None
+    else:
+        return 'Database error, couldn\'t add quote to database.'
 
 
 @route('/quotes/<quote_id:int>')

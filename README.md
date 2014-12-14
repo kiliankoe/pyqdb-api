@@ -72,6 +72,11 @@ Sending a POST request to `/quotes` adds a new quote to the database.
 Send a form-urlencoded request with the parameter `quote`. HTML entities are escaped on the server side, no need for that on the client.
 
 
+## Text message
+
+There's also the option of adding quotes via text message. This is however currently configured a bit more manually, so please contact me directly if you want access.
+
+
 ### Examples
 
 Check [example.py](https://github.com/kiliankoe/pyqdb-api/blob/master/example.py) for some sample interaction with the API
