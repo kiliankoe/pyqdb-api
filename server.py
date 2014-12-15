@@ -46,88 +46,78 @@ def authenticate():
     return res
 
 
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return authenticate()
-        return f(*args, **kwargs)
-    return decorated
-
-
 @app.route('/')
 def get_root():
     """Catch requests to the root of the API, so they don't show with errors."""
-    return 'Looking for the quotes? They\'re under <a href="' + url_for('get_quotes') + '">/quotes</a>.'
+    return 'Looking for the quotes? They\'re under <a href="' + url_for('quotes') + '">/quotes</a>.'
 
 
-# TODO: Theoretically both routings for /quotes could be thrown into a single function
-@app.route('/quotes', methods=['GET'])
-@requires_auth
+@app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
-    """Get all quotes from the database and filter them with a few array parameters if needed."""
-    p = connect_to_db()
+    """Show all quotes or accept new quotes depending on the request method."""
 
-    if p is None:
-        return jsonify({'Error': 'Database Connection Error'}), 500
+    if request.method == 'GET':
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
 
-    if 'ip' in request.args:
-        results = p.find_by_ip(request.args.get('ip'))
-    else:
-        results = p.all_quotes()
+        p = connect_to_db()
 
-    # Process authors
-    for i in range(len(results)):
-        results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
+        if p is None:
+            return jsonify({'Error': 'Database Connection Error'}), 500
 
-    if 'author' in request.args:
-        results = filter_by_author(request.args.get('author'), results)
-    if 'rating_above' in request.args:
-        results = filter_by_rating(request.args.get('rating_above'), results)
-    if 'rating' in request.args:
-        results = filter_by_rating(request.args.get('rating'), results, direction='equal')
-    if 'rating_below' in request.args:
-        results = filter_by_rating(request.args.get('rating_below'), results, direction='below')
-    if 'after' in request.args:
-        results = filter_by_timestamp(request.args.get('after'), results)
-    if 'before' in request.args:
-        results = filter_by_timestamp(request.args.get('before'), results, direction='before')
+        if 'ip' in request.args:
+            results = p.find_by_ip(request.args.get('ip'))
+        else:
+            results = p.all_quotes()
 
-    p.close()
+        # Process authors
+        for i in range(len(results)):
+            results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
-    # apparently returning a straight list of dicts is unsupported due to security concerns
-    # see http://flask.pocoo.org/docs/0.10/security/#json-security
-    res = make_response(json.dumps(results))
-    res.headers['Content-Type'] = 'application/json'
-    return res
+        if 'author' in request.args:
+            results = filter_by_author(request.args.get('author'), results)
+        if 'rating_above' in request.args:
+            results = filter_by_rating(request.args.get('rating_above'), results)
+        if 'rating' in request.args:
+            results = filter_by_rating(request.args.get('rating'), results, direction='equal')
+        if 'rating_below' in request.args:
+            results = filter_by_rating(request.args.get('rating_below'), results, direction='below')
+        if 'after' in request.args:
+            results = filter_by_timestamp(request.args.get('after'), results)
+        if 'before' in request.args:
+            results = filter_by_timestamp(request.args.get('before'), results, direction='before')
 
+        p.close()
 
-@app.route('/quotes', methods=['POST'])
-def post_new_quote():
-    """Accept POST requests for adding new quotes"""
+        # apparently returning a straight list of dicts is unsupported due to security concerns
+        # see http://flask.pocoo.org/docs/0.10/security/#json-security
+        res = make_response(json.dumps(results))
+        res.headers['Content-Type'] = 'application/json'
+        return res
 
-    auth = request.authorization
-    if not auth or not check_post_auth(auth.username, auth.password):
-        return authenticate()
+    elif request.method == 'POST':
+        auth = request.authorization
+        if not auth or not check_post_auth(auth.username, auth.password):
+            return authenticate()
 
-    p = connect_to_db()
+        p = connect_to_db()
 
-    if p is None:
-        return jsonify({'Error': 'Database Connection Error'}), 500
+        if p is None:
+            return jsonify({'Error': 'Database Connection Error'}), 500
 
-    quote = request.form['quote']
-    # request.remote_addr is also a popular choice, but that seems to be containing the server's IP for some
-    submitip = request.environ['REMOTE_ADDR']
+        quote = request.form['quote']
+        # request.remote_addr is also a popular choice, but that seems to be containing the server's IP for some
+        submitip = request.environ['REMOTE_ADDR']
 
-    result = p.add_quote(quote, submitip)
+        result = p.add_quote(quote, submitip)
 
-    p.close()
+        p.close()
 
-    if result:
-        return jsonify({'Status': 'Läuft'})
-    else:
-        return jsonify({'Error': 'Couldn\'t add quote to database'}), 500
+        if result:
+            return jsonify({'Status': 'Läuft'})
+        else:
+            return jsonify({'Error': 'Couldn\'t add quote to database'}), 500
 
 
 @app.route('/quotes/twilio', methods=['POST'])
@@ -163,9 +153,13 @@ def post_quote_from_sms():
 
 
 @app.route('/quotes/<int:quote_id>')
-@requires_auth
 def get_quote_with_id(quote_id):
     """Get a specific quote directly by its ID."""
+
+    auth = request.authorization
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
     if p is None:
@@ -183,9 +177,13 @@ def get_quote_with_id(quote_id):
 
 
 @app.route('/quotes/lastweek')
-@requires_auth
 def get_last_week():
     """Return all quotes submitted within the last 7 days."""
+
+    auth = request.authorization
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
     if p is None:
