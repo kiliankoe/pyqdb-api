@@ -1,6 +1,6 @@
 ## pyqdb-api
 
-A small python webserver powered by bottle that plays the role of a json API for [rash-qdb](https://github.com/paxed/rash-qdb-fork).
+A small python webserver powered by Flask that plays the role of a JSON API for [rash-qdb](https://github.com/paxed/rash-qdb-fork).
 
 It'll probably only work nicely with the rash-qdb server *we* have running, but let's throw it on GitHub nonetheless.
 
@@ -9,7 +9,7 @@ $ pip install requirements.txt
 $ python server.py
 ```
 
-Your MySQL and HTTP basic auth credentials are stored in a file called config.ini. Duplicate and rename the example and then fill in the details.
+The MySQL and HTTP basic auth credentials are stored in a file called config.ini. Duplicate and rename the example and then fill in the details.
 
 Then you can access the following routes from your app/browser/whatever.
 
@@ -32,11 +32,11 @@ You can filter this quote listing with a few different parameters, all of these 
 
 #### Filter by author
 
-`/quotes?author=Notch` returns all quotes by a random guy called Notch.
+`/quotes?author=Notch` returns all quotes by some random guy called Notch.
 
 `/quotes?author=Notch,Jeb` multiple, comma-separated authors are also accepted. This would return all quotes where both of them are listed as authors, not all of both their quotes.
 
-Note that the author is case-sensitive.
+Note that the author parameter is case-sensitive.
 
 #### Filter by rating
 
