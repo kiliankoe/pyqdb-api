@@ -45,30 +45,22 @@ def get_root():
     return 'Looking for the quotes? They\'re under <a href="' + url_for('get_quotes') + '">/quotes</a>.'
 
 
-# TODO: Theoretically both routings for /quotes could be thrown into a single function, let's see how auth pans out
+# TODO: Theoretically both routings for /quotes could be thrown into a single function
 @app.route('/quotes', methods=['GET'])
 # @auth_basic(check)
 def get_quotes():
     """Get all quotes from the database and filter them with a few array parameters if needed."""
     p = connect_to_db()
 
-    # TODO: Is this in any way necessary?
-    # response.content_type = 'application/json'
-
     if p is None:
-        response = make_response()
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
+        return jsonify({'Error': 'Database Connection Error'}), 500
 
-    # TODO: not sure which way to do this for now, can't check yet, app won't run :/
-    # if 'ip' in request.args.get:
     if 'ip' in request.args:
         results = p.find_by_ip(request.args.get('ip'))
     else:
         results = p.all_quotes()
 
-    # Authors aren't processed yet. This is done here because IntelliJ would error on
-    # 'Can't access non static method from static context'
+    # Process authors
     for i in range(len(results)):
         results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
@@ -86,10 +78,12 @@ def get_quotes():
         results = filter_by_timestamp(request.args.get('before'), results, direction='before')
 
     p.close()
+
     # apparently returning a straight list of dicts is unsupported due to security concerns
     # see http://flask.pocoo.org/docs/0.10/security/#json-security
-    # but it's not like this tool has sensitive information... :D
-    return json.dumps(results)
+    res = make_response(json.dumps(results))
+    res.headers['Content-Type'] = 'application/json'
+    return res
 
 
 @app.route('/quotes', methods=['POST'])
@@ -98,69 +92,49 @@ def post_new_quote():
     """Accept POST requests for adding new quotes"""
     p = connect_to_db()
 
-    # TODO: Is this in any way necessary?
-    # response.content_type = 'application/json'
-
     if p is None:
-        response = make_response()
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
-
-    # TODO: Apparently Flask returns a Bad Request status automatically on a key error, let's test this later though
-    # if 'quote' not in request.form:
-    #     response.status = 400
-    #     return {'Error': 'Invalid data supplied. Needs `quote`.'}
+        return jsonify({'Error': 'Database Connection Error'}), 500
 
     quote = request.form['quote']
-    submitip = request.form['remote_addr']
+    # request.remote_addr is also a popular choice, but that seems to be containing the server's IP for some
+    submitip = request.environ['REMOTE_ADDR']
 
     result = p.add_quote(quote, submitip)
 
     p.close()
 
     if result:
-        return {'Status': 'Läuft'}
+        return jsonify({'Status': 'Läuft'})
     else:
-        response = make_response()
-        response.status = 500
-        return {'Error': 'Couldn\'t add quote to database'}
+        return jsonify({'Error': 'Couldn\'t add quote to database'}), 500
 
 
-@app.route('/quotes/twilio', methods='POST')
+@app.route('/quotes/twilio', methods=['POST'])
 # @auth_basic(check_post)
 def post_quote_from_sms():
     """A webhook for Twilio accepting new quotes via text message by approved senders."""
     p = connect_to_db()
 
-    response = make_response()
-    response.content_type = 'text/plain'
-
-    # TODO: Apparently Flask returns a Bad Request status automatically on a key error, let's test this later though
-    # if 'Body' not in request.form or 'From' not in request.form:
-    #     # this shouldn't happen with Twilio, but catch it just in case
-    #     response.status = 400
-    #     return None
+    res = make_response()
+    res.content_type = 'text/plain'
 
     quote = request.form['Body']
     sender = request.form['From']
 
     if sender not in name_handler.approved_numbers:
         # don't allow quotes from non-approved numbers
-        abort(403)
-        return None
+        return '', 403
 
     if p is None:
-        response = make_response()
-        response.status = 500
-        return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
+        res = make_response('Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.', 500)
+        return res
 
     result = p.add_quote(quote, sender)
     if result:
-        return None
+        return ''
     else:
-        response = make_response()
-        response.status = 500
-        return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
+        res = make_response('Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.', 500)
+        return res
 
 
 @app.route('/quotes/<int:quote_id>')
@@ -169,25 +143,18 @@ def get_quote_with_id(quote_id):
     """Get a specific quote directly by its ID."""
     p = connect_to_db()
 
-    # TODO: Is this in any way necessary?
-    # response.content_type = 'application/json'
-
     if p is None:
-        response = make_response()
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
+        return jsonify({'Error': 'Database Connection Error'}), 500
 
     quote = p.find_by_id(quote_id)
     if quote:
         quote['authors'] = name_handler.process_authors(quote['quote'])
     else:
-        response = make_response()
-        response.status = 404
-        return {'Error': 'No such quote'}
+        return jsonify({'Error': 'No such quote'}), 404
 
     p.close()
 
-    return quote
+    return jsonify(quote)
 
 
 @app.route('/quotes/lastweek')
