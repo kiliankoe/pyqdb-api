@@ -1,9 +1,11 @@
+from flask import Flask, request, make_response, abort, jsonify, json, url_for
 from pyqdb import *
-from bottle import route, run, request, response, auth_basic, debug
+from functools import wraps
 import time
-import json
 import os
 import configparser
+
+app = Flask(__name__)
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -27,163 +29,165 @@ def connect_to_db():
     return p
 
 
-def check(auth_user, auth_pw):
+def check_auth(auth_user, auth_pw):
     """Check the default HTTP basic auth credentials."""
     return auth_user == config['HTTP Auth']['user'] and auth_pw == config['HTTP Auth']['password']
 
 
-def check_post(auth_user, auth_pw):
+def check_post_auth(auth_user, auth_pw):
     """Check the HTTP basic auth credentials for a POST request adding a quote."""
     return auth_user == config['HTTP Auth POST']['user'] and auth_pw == config['HTTP Auth POST']['password']
 
 
-@route('/')
+def authenticate():
+    """Send an Unauthorized status and prompt the user to authenticate."""
+    res = make_response('<h1>Error: 401 Unauthorized</h1>', 401)
+    res.headers['WWW-Authenticate'] = 'Basic realm="Login Required"'
+    return res
+
+
+@app.route('/')
 def get_root():
     """Catch requests to the root of the API, so they don't show with errors."""
-    response.content_type = 'text/plain'
-    return 'Looking for the quotes? They\'re under /quotes'
+    return 'Looking for the quotes? They\'re under <a href="' + url_for('quotes') + '">/quotes</a>.'
 
 
-@route('/quotes', 'GET')
-@auth_basic(check)
-def get_quotes():
-    """Get all quotes from the database and filter them with a few array parameters if needed."""
-    p = connect_to_db()
+@app.route('/quotes', methods=['GET', 'POST'])
+def quotes():
+    """Show all quotes or accept new quotes depending on the request method."""
 
-    response.content_type = 'application/json'
+    if request.method == 'GET':
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
 
-    if p is None:
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
+        p = connect_to_db()
 
-    if 'ip' in request.query:
-        results = p.find_by_ip(request.query['ip'])
-    else:
-        results = p.all_quotes()
+        if p is None:
+            return jsonify({'Error': 'Database Connection Error'}), 500
 
-    # Authors aren't processed yet. This is done here because IntelliJ would error on
-    # 'Can't access non static method from static context'
-    for i in range(len(results)):
-        results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
+        if 'ip' in request.args:
+            results = p.find_by_ip(request.args.get('ip'))
+        else:
+            results = p.all_quotes()
 
-    if 'author' in request.query:
-        results = filter_by_author(request.query.author, results)
-    if 'rating_above' in request.query:
-        results = filter_by_rating(request.query.rating_above, results)
-    if 'rating' in request.query:
-        results = filter_by_rating(request.query.rating, results, 'equal')
-    if 'rating_below' in request.query:
-        results = filter_by_rating(request.query.rating_below, results, 'below')
-    if 'after' in request.query:
-        results = filter_by_timestamp(request.query.after, results)
-    if 'before' in request.query:
-        results = filter_by_timestamp(request.query.before, results, 'before')
+        # Process authors
+        for i in range(len(results)):
+            results[i]['authors'] = name_handler.process_authors(results[i]['quote'])
 
-    p.close()
-    # apparently returning a straight list of dicts is unsupported due to security concerns
-    # see http://flask.pocoo.org/docs/0.10/security/#json-security
-    # but it's not like this tool has sensitive information... :D
-    return json.dumps(results)
+        if 'author' in request.args:
+            results = filter_by_author(request.args.get('author'), results)
+        if 'rating_above' in request.args:
+            results = filter_by_rating(request.args.get('rating_above'), results)
+        if 'rating' in request.args:
+            results = filter_by_rating(request.args.get('rating'), results, direction='equal')
+        if 'rating_below' in request.args:
+            results = filter_by_rating(request.args.get('rating_below'), results, direction='below')
+        if 'after' in request.args:
+            results = filter_by_timestamp(request.args.get('after'), results)
+        if 'before' in request.args:
+            results = filter_by_timestamp(request.args.get('before'), results, direction='before')
 
+        p.close()
 
-@route('/quotes', 'POST')
-@auth_basic(check_post)
-def post_new_quote():
-    """Accept POST requests for adding new quotes"""
-    p = connect_to_db()
+        # apparently returning a straight list of dicts is unsupported due to security concerns
+        # see http://flask.pocoo.org/docs/0.10/security/#json-security
+        res = make_response(json.dumps(results))
+        res.headers['Content-Type'] = 'application/json'
+        return res
 
-    response.content_type = 'application/json'
+    elif request.method == 'POST':
+        auth = request.authorization
+        if not auth or not check_post_auth(auth.username, auth.password):
+            return authenticate()
 
-    if p is None:
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
+        p = connect_to_db()
 
-    if 'quote' not in request.forms:
-        response.status = 400
-        return {'Error': 'Invalid data supplied. Needs `quote`.'}
+        if p is None:
+            return jsonify({'Error': 'Database Connection Error'}), 500
 
-    quote = request.forms.quote
-    submitip = request.remote_addr
+        quote = request.form['quote']
+        # request.remote_addr is also a popular choice, but that seems to be containing the server's IP for some
+        submitip = request.environ['REMOTE_ADDR']
 
-    result = p.add_quote(quote, submitip)
+        result = p.add_quote(quote, submitip)
 
-    p.close()
+        p.close()
 
-    if result:
-        return {'Status': 'Läuft'}
-    else:
-        response.status = 500
-        return {'Error': 'Couldn\'t add quote to database'}
+        if result:
+            return jsonify({'Status': 'Läuft'})
+        else:
+            return jsonify({'Error': 'Couldn\'t add quote to database'}), 500
 
 
-@route('/quotes/twilio', 'POST')
-@auth_basic(check_post)
+@app.route('/quotes/twilio', methods=['POST'])
 def post_quote_from_sms():
     """A webhook for Twilio accepting new quotes via text message by approved senders."""
+
+    auth = request.authorization
+    if not auth or not check_post_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
-    response.content_type = 'text/plain'
+    res = make_response()
+    res.content_type = 'text/plain'
 
-    if 'Body' not in request.forms or 'From' not in request.forms:
-        # this shouldn't happen with Twilio, but catch it just in case
-        response.status = 400
-        return None
-
-    quote = request.forms.Body
-    sender = request.forms.From
+    quote = request.form['Body']
+    sender = request.form['From']
 
     if sender not in name_handler.approved_numbers:
         # don't allow quotes from non-approved numbers
-        response.status = 403
-        return None
+        return '', 403
 
     if p is None:
-        response.status = 500
-        return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
+        res = make_response('Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.', 500)
+        return res
 
     result = p.add_quote(quote, sender)
     if result:
-        return None
+        return ''
     else:
-        response.status = 500
-        return 'Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.'
+        res = make_response('Bäh, ein Datenbankfehler. Schreib\' bitte Kilian an.', 500)
+        return res
 
 
-@route('/quotes/<quote_id:int>')
-@auth_basic(check)
+@app.route('/quotes/<int:quote_id>')
 def get_quote_with_id(quote_id):
     """Get a specific quote directly by its ID."""
+
+    auth = request.authorization
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
-    response.content_type = 'application/json'
-
     if p is None:
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
+        return jsonify({'Error': 'Database Connection Error'}), 500
 
     quote = p.find_by_id(quote_id)
     if quote:
         quote['authors'] = name_handler.process_authors(quote['quote'])
     else:
-        response.status = 404
-        return {'Error': 'No such quote'}
+        return jsonify({'Error': 'No such quote'}), 404
 
     p.close()
 
-    return quote
+    return jsonify(quote)
 
 
-@route('/quotes/lastweek')
-@auth_basic(check)
+@app.route('/quotes/lastweek')
 def get_last_week():
     """Return all quotes submitted within the last 7 days."""
+
+    auth = request.authorization
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
-    response.content_type = 'application/json'
-
     if p is None:
-        response.status = 500
-        return {'Error': 'Database Connection Error'}
+        return jsonify({'Error': 'Database Connection Error'}), 500
 
     timestamp_last_week = int(time.time()) - 604800
     results = filter_by_timestamp(timestamp_last_week, p.all_quotes())
@@ -192,25 +196,25 @@ def get_last_week():
 
     p.close()
 
-    return json.dumps(results)
+    res = make_response(json.dumps(results))
+    res.headers['Content-Type'] = 'application/json'
+
+    return res
 
 
-@route('/status')
+@app.route('/status')
 def api_status():
     """Return the current server time and load averages."""
-    return {'status': 'online', 'servertime': time.time(), 'load': os.getloadavg()}
+    return jsonify({'status': 'online', 'servertime': time.time(), 'load': os.getloadavg()})
 
 
-@route('/coffee')
+@app.route('/coffee')
 def make_coffee():
     """Answer to /coffee with the most important HTTP status code of all."""
-    response.status = 418
-    response.content_type = 'application/json'
-    return {'Error': 'I\'m a teapot.'}
+    return jsonify({'Error': 'I\'m a teapot'}), 418
 
 
 if os.getenv('env') == 'development':
-    debug(True)
-    run(reloader=True, host=config['Server']['host'], port=config['Server']['port'])
+    app.run(debug=True, host=config['Server']['host'], port=int(config['Server']['port']))
 else:
-    run(host=config['Server']['host'], port=config['Server']['port'])
+    app.run(host=config['Server']['host'], port=int(config['Server']['port']))
