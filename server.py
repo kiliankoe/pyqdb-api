@@ -1,7 +1,7 @@
 from flask import Flask, request, make_response, abort, jsonify, json, url_for
 from pyqdb import *
+from functools import wraps
 import time
-# import json
 import os
 import configparser
 
@@ -29,14 +29,31 @@ def connect_to_db():
     return p
 
 
-def check(auth_user, auth_pw):
+def check_auth(auth_user, auth_pw):
     """Check the default HTTP basic auth credentials."""
     return auth_user == config['HTTP Auth']['user'] and auth_pw == config['HTTP Auth']['password']
 
 
-def check_post(auth_user, auth_pw):
+def check_post_auth(auth_user, auth_pw):
     """Check the HTTP basic auth credentials for a POST request adding a quote."""
     return auth_user == config['HTTP Auth POST']['user'] and auth_pw == config['HTTP Auth POST']['password']
+
+
+def authenticate():
+    """Send an Unauthorized status and prompt the user to authenticate."""
+    res = make_response('<h1>Error: 401 Unauthorized</h1>', 401)
+    res.headers['WWW-Authenticate'] = 'Basic realm="Login Required"'
+    return res
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
 
 
 @app.route('/')
@@ -47,8 +64,8 @@ def get_root():
 
 # TODO: Theoretically both routings for /quotes could be thrown into a single function
 @app.route('/quotes', methods=['GET'])
-# @auth_basic(check)
-def get_quotes():
+@requires_auth
+def quotes():
     """Get all quotes from the database and filter them with a few array parameters if needed."""
     p = connect_to_db()
 
@@ -87,9 +104,13 @@ def get_quotes():
 
 
 @app.route('/quotes', methods=['POST'])
-# @auth_basic(check_post)
 def post_new_quote():
     """Accept POST requests for adding new quotes"""
+
+    auth = request.authorization
+    if not auth or not check_post_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
     if p is None:
@@ -110,9 +131,13 @@ def post_new_quote():
 
 
 @app.route('/quotes/twilio', methods=['POST'])
-# @auth_basic(check_post)
 def post_quote_from_sms():
     """A webhook for Twilio accepting new quotes via text message by approved senders."""
+
+    auth = request.authorization
+    if not auth or not check_post_auth(auth.username, auth.password):
+        return authenticate()
+
     p = connect_to_db()
 
     res = make_response()
@@ -138,7 +163,7 @@ def post_quote_from_sms():
 
 
 @app.route('/quotes/<int:quote_id>')
-# @auth_basic(check)
+@requires_auth
 def get_quote_with_id(quote_id):
     """Get a specific quote directly by its ID."""
     p = connect_to_db()
@@ -158,7 +183,7 @@ def get_quote_with_id(quote_id):
 
 
 @app.route('/quotes/lastweek')
-# @auth_basic(check)
+@requires_auth
 def get_last_week():
     """Return all quotes submitted within the last 7 days."""
     p = connect_to_db()
