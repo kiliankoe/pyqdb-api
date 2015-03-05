@@ -1,20 +1,30 @@
 FORMAT: 1A
 
 # pyqdb
-Notes API is a *short texts saving* service similar to its physical paper presence on your table.
+Pyqdb-API is a service to access quotes saved in a rash-qdb database in the form of a JSON API.
 
-# Group Notes
-Notes related resources of the **Notes API**
+# Group Quotes
+Quotes related resources of the **pyqdb API**
 
-## Notes Collection [/notes]
-### List all Notes [GET]
+## Quotes Collection [/quotes]
+### List all quotes [GET]
 + Response 200 (application/json)
 
         [{
-          "id": 1, "title": "Jogging in park"
-        }, {
-          "id": 2, "title": "Pick-up posters from post-office"
-        }]
+            "rating": -8,
+            "quote": "\"Niemand hat die Absicht, Minecraft zu spielen\" - Notch",
+            "authors": ["Notch"],
+            "id": 1,
+            "timestamp": 1389883016
+        },
+        {
+            "rating": 5,
+            "quote": "\"This is another sample quote. Not unlike the one by Notch.\" - Jeb",
+            "authors": ["Notch", "Jeb"],
+            "id": 2,
+            "timestamp": 1389884567
+        }
+        ]
 
 ### Create a Note [POST]
 + Request (application/json)
