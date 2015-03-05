@@ -1,0 +1,72 @@
+FORMAT: 1A
+
+# parkplaetzeDD
+This provides the data from [dresden.de](http://dresden.de/freie-parkplaetze) in the machine-readable
+form of a JSON API.
+
+## Parking lot List [/json.php]
+### List all parking lots [GET]
++ Response 200 (application/json)
+
+        [{
+            "name": "Innere Altstadt",
+            "lots": [{
+                "name": "Altmarkt",
+                "fullname": "Tiefgarage Altmarkt",
+                "count": "400",
+                "free": "376",
+                "tendency": "decreasing",
+                "state": "many",
+                "lat": 51.0502683537,
+                "lon": 13.7378780267,
+                "address": "Wilsdruffer Straße, 01067 Dresden",
+                "times": "24/7",
+                "pricing": "Erste und zweite angefangene Stunde je 1,50 Euro Dritte angefangene Stunde 2,00 Euro Jede weitere angefangene Stunde 2,50 Euro Tageshöchstsatz 17,00 Euro",
+                "phone": null,
+                "email": null,
+                "website": null,
+                "reservations": false,
+                "maplink": "http://stadtplan.dresden.de/?POS-XY=5411635|5657980&POS-OFFSET=300",
+                "thumbnail": "http://www.dresden.de/img/parken/standorte/TG16.jpg"
+            }, {
+                "name": "An der Frauenkirche",
+                "fullname": "Tiefgarage An der Frauenkirche",
+                "count": "120",
+                "free": "113",
+                "tendency": "increasing",
+                "state": "many",
+                "lat": 51.051415072,
+                "lon": 13.7441934672,
+                "address": "An der Frauenkirche 12a, 01067 Dresden",
+                "times": "24/7",
+                "pricing": "6 - 20 Uhr - je angefangene Stunde 2,00 Euro 20 - 6 Uhr - je angefangene Stunde 1,50 Euro",
+                "phone": "0351/4960603",
+                "email": "tiefgarage-frauenkirche.dresden@gmx.de",
+                "website": "http://www.tiefgarage-frauenkirche.de/",
+                "reservations": true,
+                "maplink": "http://stadtplan.dresden.de/?POS-XY=5412080|5658110&POS-OFFSET=300",
+                "thumbnail": "http://www.dresden.de/img/parken/standorte/TG03.jpg"
+            }]
+        }, {
+            "name": "Ring West",
+            "lots": [{
+                "name": "Kongresszentrum",
+                "fullname": "Tiefgarage Kongresszentrum",
+                "count": "250",
+                "free": "217",
+                "tendency": "consistent",
+                "state": "many",
+                "lat": 51.0590019661,
+                "lon": 13.7308651039,
+                "address": "Ostra-Ufer 2 01067 Dresden",
+                "times": "24/7",
+                "pricing": "je angef. Stunde 1,50 Euro Tageshöchstsatz 14,00 Euro",
+                "phone": null,
+                "email": null,
+                "website": null,
+                "reservations": false,
+                "maplink": "http://stadtplan.dresden.de/?POS-XY=5411160|5658970&POS-OFFSET=300",
+                "thumbnail": "http://www.dresden.de/img/parken/standorte/TG12.jpg"
+            }]
+        }]
+
